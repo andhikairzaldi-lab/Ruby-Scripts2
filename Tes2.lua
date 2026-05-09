@@ -58,7 +58,7 @@ ButtonFarm.MouseButton1Click:Connect(function()
                     
                     -- TUNGGU ANIMASI: Kita beri jeda yang pas (2-3 detik)
                     -- Ini supaya server melihat kamu nendang layaknya manusia
-                    task.wait(2.5) 
+                    task.wait() 
                     
                     -- AMBIL HADIAH
                     kickCollect:FireServer()
