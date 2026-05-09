@@ -1,69 +1,83 @@
-local ToggleGod = false
+local Toggle = false
 local ScreenGui = Instance.new("ScreenGui")
 local Frame = Instance.new("Frame")
 local ButtonTP = Instance.new("TextButton")
-local ButtonGod = Instance.new("TextButton")
+local ButtonFarm = Instance.new("TextButton")
 
--- Setup UI
+-- UI Setup Ramping
 ScreenGui.Parent = game.CoreGui
 Frame.Parent = ScreenGui
-Frame.Size = UDim2.new(0, 200, 0, 150)
-Frame.Position = UDim2.new(0.4, 0, 0.4, 0)
+Frame.Size = UDim2.new(0, 150, 0, 90)
+Frame.Position = UDim2.new(0.5, -75, 0.4, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Frame.Active = true
 Frame.Draggable = true
 
--- Tombol Teleport (Sekali Klik)
-ButtonTP.Parent = Frame
-ButtonTP.Size = UDim2.new(0.9, 0, 0.4, 0)
-ButtonTP.Position = UDim2.new(0.05, 0, 0.05, 0)
-ButtonTP.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-ButtonTP.Text = "TELEPORT KE KOORDINAT"
-ButtonTP.TextScaled = true
+local function styleBtn(btn, text, pos, color)
+    btn.Parent = Frame
+    btn.Size = UDim2.new(0.9, 0, 0.4, 0)
+    btn.Position = pos
+    btn.Text = text
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.TextSize = 12
+    btn.BorderSizePixel = 0
+end
 
--- Tombol Kebal (God Mode)
-ButtonGod.Parent = Frame
-ButtonGod.Size = UDim2.new(0.9, 0, 0.4, 0)
-ButtonGod.Position = UDim2.new(0.05, 0, 0.5, 0)
-ButtonGod.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-ButtonGod.Text = "KEBAL: OFF"
-ButtonGod.TextScaled = true
+styleBtn(ButtonTP, "TELEPORT", UDim2.new(0.05, 0, 0.07, 0), Color3.fromRGB(0, 100, 200))
+styleBtn(ButtonFarm, "AUTO FARM: OFF", UDim2.new(0.05, 0, 0.53, 0), Color3.fromRGB(150, 0, 0))
 
--- FUNGSI TELEPORT MANUAL (Lebih Aman)
+-- 1. TELEPORT KE KOORDINAT
 ButtonTP.MouseButton1Click:Connect(function()
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(690, 5, 232)
+    local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if root then root.CFrame = CFrame.new(690, 5, 232) end
+end)
+
+-- 2. AUTO FARM (KICK + GOD MODE)
+local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
+local kickEvent = network:WaitForChild("rev_KickEvent")
+local kickCollect = network:WaitForChild("rev_KickCollect")
+
+ButtonFarm.MouseButton1Click:Connect(function()
+    Toggle = not Toggle
+    ButtonFarm.Text = Toggle and "AUTO FARM: ON" or "AUTO FARM: OFF"
+    ButtonFarm.BackgroundColor3 = Toggle and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
+    
+    if Toggle then
+        task.spawn(function()
+            while Toggle do
+                local char = game.Players.LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                
+                if hum and hum.Health > 0 then
+                    -- GOD MODE
+                    hum.Health = hum.MaxHealth
+                    
+                    -- AUTO KICK (Langsung tembak Remote)
+                    -- Kita kirim angka 1 supaya dapet Perfect (Hooking tetap aktif buat jaga-jaga)
+                    kickEvent:FireServer(1)
+                    
+                    -- Tunggu sebentar biar animasi masuk, baru ambil hadiah
+                    task.wait(0.3)
+                    kickCollect:FireServer()
+                end
+                
+                -- JEDA: Sangat penting biar nggak kena kick Error 267
+                -- Kamu bisa ganti 0.8 ke 0.5 kalau mau lebih kencang (tapi risiko kick naik)
+                task.wait(0.8) 
+            end
+        end)
     end
 end)
--- FUNGSI KEBAL (Metode State)
-ButtonGod.MouseButton1Click:Connect(function()
-    ToggleGod = not ToggleGod
-    ButtonGod.Text = ToggleGod and "KEBAL: ON" or "KEBAL: OFF"
-    ButtonGod.BackgroundColor3 = ToggleGod and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
-    
-    local player = game.Players.LocalPlayer
-    local char = player.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-    if hum then
-        if ToggleGod then
-            -- Mematikan semua perubahan status (termasuk pengurangan darah)
-            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-            
-            -- Mencoba mengunci darah di angka maksimal
-            task.spawn(function()
-                while ToggleGod do
-                    hum.Health = hum.MaxHealth
-                    task.wait()
-                end
-            end)
-        else
-            -- Mengembalikan fungsi normal
-            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
-            char:BreakJoints() -- Reset karakter agar normal kembali
-        end
+-- HOOKING UNTUK PERFECT (Agar tetap aman meski nendang manual)
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    if Toggle and self == kickEvent and method == "FireServer" then
+        args[1] = 1 
+        return oldNamecall(self, unpack(args))
     end
+    return oldNamecall(self, ...)
 end)
