@@ -26,7 +26,6 @@ local posBase = Vector3.new(650, 5, 232) -- GANTI dengan koordinat base kamu yan
 
 local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local kickEvent = network:WaitForChild("rev_KickEvent")
-local kickCollect = network:WaitForChild("rev_KickCollect")
 
 ButtonFarm.MouseButton1Click:Connect(function()
     Toggle = not Toggle
@@ -50,7 +49,7 @@ ButtonFarm.MouseButton1Click:Connect(function()
                     
                     -- 2. NENDANG (AUTO PERFECT)
                     kickEvent:FireServer(1)
-                    task.wait(2.5) -- Tunggu balok hancur/terpental
+                    task.wait() -- Tunggu balok hancur/terpental
                     
                     -- 3. BALIK KE BASE (PENTING BIAR GAK KICK)
                     root.CFrame = CFrame.new(posBase)
@@ -59,7 +58,7 @@ ButtonFarm.MouseButton1Click:Connect(function()
                     -- 4. BARU AMBIL HADIAH
                     kickCollect:FireServer()
                     
-                    task.wait(1) -- Jeda antar putaran
+                    task.wait() -- Jeda antar putaran
                 end
             end
         end)
