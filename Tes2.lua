@@ -6,7 +6,7 @@ local SpeedInput = Instance.new("TextBox")
 local Toggle = false
 local CurrentSpeed = 50 
 
--- UI Setup
+-- UI SETUP (Dibuat seaman mungkin)
 ScreenGui.Parent = game.CoreGui
 Frame.Parent = ScreenGui
 Frame.Size = UDim2.new(0, 160, 0, 130)
@@ -37,77 +37,54 @@ SpeedInput.TextColor3 = Color3.new(1,1,1)
 styleBtn(ButtonTP, "TELEPORT", UDim2.new(0.05, 0, 0.3, 0), Color3.fromRGB(0, 100, 200))
 styleBtn(ButtonFarm, "FARM: OFF", UDim2.new(0.05, 0, 0.65, 0), Color3.fromRGB(150, 0, 0))
 
+-- Update Speed
 SpeedInput.FocusLost:Connect(function()
     local val = tonumber(SpeedInput.Text)
-    if val then
-        CurrentSpeed = math.clamp(val, 1, 200)
-    end
+    if val then CurrentSpeed = math.clamp(val, 1, 200) end
 end)
 
--- Jalur Network (Pastikan Folder 'Network' benar ada di bawah 'Packages')
-local netFolder = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
-
+-- FUNGSI TELEPORT
 ButtonTP.MouseButton1Click:Connect(function()
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(690, 5, 232)
+    local p = game.Players.LocalPlayer
+    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+        p.Character.HumanoidRootPart.CFrame = CFrame.new(690, 5, 232)
     end
 end)
 
+-- FUNGSI UTAMA
 ButtonFarm.MouseButton1Click:Connect(function()
     Toggle = not Toggle
     ButtonFarm.Text = Toggle and "FARM: ON" or "FARM: OFF"
     ButtonFarm.BackgroundColor3 = Toggle and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
     
     if Toggle then
-        -- THREAD 1: SPEED & JALAN
         task.spawn(function()
+            -- Ambil folder network langsung di sini biar gak error di awal
+            local net = game:GetService("ReplicatedStorage").Shared.Packages.Network
+            
             while Toggle do
                 pcall(function()
                     local char = game.Players.LocalPlayer.Character
                     local hum = char:FindFirstChildOfClass("Humanoid")
                     local root = char:FindFirstChild("HumanoidRootPart")
-                    
-                    -- Kirim Remote Speed yang kamu dapet dari Spy
-                    netFolder.rev_SPEED:FireServer(CurrentSpeed)
-                    
+
+                    -- 1. BYPASS SPEED (Dari hasil Spy kamu)
+                    net.rev_SPEED:FireServer(CurrentSpeed)
                     hum.WalkSpeed = CurrentSpeed
                     hum:Move(Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z), true)
-                end)
-                task.wait(0.2) -- Jeda biar gak kick spam
-            end
-        end)
 
-        -- THREAD 2: KICK & GOD MODE
-        task.spawn(function()
-            while Toggle do
-                pcall(function()
-                    local char = game.Players.LocalPlayer.Character
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    
+                    -- 2. KICK & GOD MODE
                     hum.Health = hum.MaxHealth
-                    netFolder.rev_KickEvent:FireServer(1)
+                    net.rev_KickEvent:FireServer(1)
                 end)
-                task.wait(1.5)
+                task.wait(0.2) -- Loop tipis biar lancar
             end
         end)
     else
-        -- RESET SPEED
         pcall(function()
-            netFolder.rev_SPEED:FireServer(16)
+            local net = game:GetService("ReplicatedStorage").Shared.Packages.Network
+            net.rev_SPEED:FireServer(16)
             game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
         end)
     end
-end)
-
--- HOOKING UNTUK PERFECT (Hanya aktif jika Toggle ON)
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-    if Toggle and self.Name == "rev_KickEvent" and method == "FireServer" then
-        args[1] = 1
-        return oldNamecall(self, unpack(args))
-    end
-    return oldNamecall(self, ...)
 end)
