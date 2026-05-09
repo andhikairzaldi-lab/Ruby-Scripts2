@@ -41,18 +41,17 @@ SpeedInput.FocusLost:Connect(function()
     local val = tonumber(SpeedInput.Text)
     if val then
         CurrentSpeed = math.clamp(val, 1, 200)
-        SpeedInput.Text = tostring(CurrentSpeed)
     end
 end)
 
--- Remotes
-local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
-local kickEvent = network:WaitForChild("rev_KickEvent")
-local speedEvent = network:WaitForChild("rev_SPEED")
+-- Jalur Network (Pastikan Folder 'Network' benar ada di bawah 'Packages')
+local netFolder = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 
 ButtonTP.MouseButton1Click:Connect(function()
-    local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if root then root.CFrame = CFrame.new(690, 5, 232) end
+    local char = game.Players.LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = CFrame.new(690, 5, 232)
+    end
 end)
 
 ButtonFarm.MouseButton1Click:Connect(function()
@@ -61,52 +60,53 @@ ButtonFarm.MouseButton1Click:Connect(function()
     ButtonFarm.BackgroundColor3 = Toggle and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
     
     if Toggle then
-        -- THREAD 1: JALAN + BYPASS SPEED SERVER
+        -- THREAD 1: SPEED & JALAN
         task.spawn(function()
             while Toggle do
-                local char = game.Players.LocalPlayer.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                if hum and root then
-                    -- Tembak remote ke server biar diizinkan kencang
-                    speedEvent:FireServer(CurrentSpeed)
+                pcall(function()
+                    local char = game.Players.LocalPlayer.Character
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    
+                    -- Kirim Remote Speed yang kamu dapet dari Spy
+                    netFolder.rev_SPEED:FireServer(CurrentSpeed)
                     
                     hum.WalkSpeed = CurrentSpeed
                     hum:Move(Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z), true)
-                end
-                task.wait(0.1) -- Jeda tipis biar nggak spam berlebihan tapi tetep kencang
+                end)
+                task.wait(0.2) -- Jeda biar gak kick spam
             end
         end)
 
         -- THREAD 2: KICK & GOD MODE
         task.spawn(function()
             while Toggle do
-                local char = game.Players.LocalPlayer.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                if hum and hum.Health > 0 then
+                pcall(function()
+                    local char = game.Players.LocalPlayer.Character
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    
                     hum.Health = hum.MaxHealth
-                    hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-                    kickEvent:FireServer(1)
-                end
-                task.wait(1.5) 
+                    netFolder.rev_KickEvent:FireServer(1)
+                end)
+                task.wait(1.5)
             end
         end)
     else
-        local hum = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then 
-            hum.WalkSpeed = 16 
-            speedEvent:FireServer(16) -- Balikin speed server ke normal
-        end
+        -- RESET SPEED
+        pcall(function()
+            netFolder.rev_SPEED:FireServer(16)
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        end)
     end
 end)
 
--- HOOKING UNTUK PERFECT
+-- HOOKING UNTUK PERFECT (Hanya aktif jika Toggle ON)
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local args = {...}
     local method = getnamecallmethod()
-    if Toggle and self == kickEvent and method == "FireServer" then
-        args[1] = 1 
+    local args = {...}
+    if Toggle and self.Name == "rev_KickEvent" and method == "FireServer" then
+        args[1] = 1
         return oldNamecall(self, unpack(args))
     end
     return oldNamecall(self, ...)
