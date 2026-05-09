@@ -1,116 +1,76 @@
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
-local PlayerGui = LP:FindFirstChildOfClass("PlayerGui")
-
--- Hapus UI lama agar tidak menumpuk
-if PlayerGui:FindFirstChild("SimpleSpyFix") then PlayerGui.SimpleSpyFix:Destroy() end
-
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SimpleSpyFix"
-ScreenGui.Parent = PlayerGui
-ScreenGui.ResetOnSpawn = false
-
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 180, 0, 140)
-Frame.Position = UDim2.new(0.5, -90, 0.2, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-Frame.Active = true
-Frame.Draggable = true -- Pastikan executor mendukung Draggable
-Frame.Parent = ScreenGui
+local ButtonTP = Instance.new("TextButton")
+local ButtonFarm = Instance.new("TextButton")
+local Toggle = false
 
-local function createBtn(name, text, pos, color)
-    local b = Instance.new("TextButton")
-    b.Name = name
-    b.Size = UDim2.new(0.9, 0, 0.22, 0)
-    b.Position = pos
-    b.Text = text
-    b.BackgroundColor3 = color
-    b.TextColor3 = Color3.new(1,1,1)
-    b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 14
-    b.ZIndex = 5 -- Pastikan tombol di atas Frame
-    b.Parent = Frame
-    return b
+-- UI Setup (Lebih Kecil & Rapi)
+ScreenGui.Parent = game.CoreGui
+Frame.Parent = ScreenGui
+Frame.Size = UDim2.new(0, 150, 0, 90) -- Ukuran diperkecil
+Frame.Position = UDim2.new(0.5, -75, 0.4, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Frame.Active = true
+Frame.Draggable = true
+
+local function styleBtn(btn, text, pos, color)
+    btn.Parent = Frame
+    btn.Size = UDim2.new(0.9, 0, 0.4, 0)
+    btn.Position = pos
+    btn.Text = text
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.TextSize = 12
+    btn.BorderSizePixel = 0
 end
 
-local btnTP = createBtn("TP", "TP KE PLOT", UDim2.new(0.05, 0, 0.05, 0), Color3.fromRGB(0, 120, 255))
-local btnFarm = createBtn("Farm", "AUTO FARM: OFF", UDim2.new(0.05, 0, 0.30, 0), Color3.fromRGB(200, 0, 0))
-local btnTrain = createBtn("Train", "AUTO TRAIN: OFF", UDim2.new(0.05, 0, 0.55, 0), Color3.fromRGB(120, 0, 180))
-local btnStatus = createBtn("Status", "CHECK REMOTES", UDim2.new(0.05, 0, 0.80, 0), Color3.fromRGB(50, 50, 50))
+styleBtn(ButtonTP, "TELEPORT", UDim2.new(0.05, 0, 0.07, 0), Color3.fromRGB(0, 100, 200))
+styleBtn(ButtonFarm, "FARM: OFF", UDim2.new(0.05, 0, 0.53, 0), Color3.fromRGB(150, 0, 0))
 
-local ToggleFarm = false
-local ToggleTrain = false
-
--- Cari Remote Event (Kadang nama atau lokasinya berubah setelah update)
-local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
-local kickEvent = network:FindFirstChild("rev_KickEvent") or network:FindFirstChild("KickEvent")
-local trainEvent = network:FindFirstChild("rev_TrainEvent") or network:FindFirstChild("TrainEvent")
-
--- Tombol Status untuk cek apakah script menemukan remote game
-btnStatus.MouseButton1Down:Connect(function()
-    if kickEvent and trainEvent then
-        btnStatus.Text = "REMOTES: FOUND ✅"
-    else
-        btnStatus.Text = "REMOTES: NOT FOUND ❌"
-    end
-end)
-
--- Tombol Teleport
-btnTP.MouseButton1Down:Connect(function()
-    local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+-- 1. TELEPORT MANUAL
+ButtonTP.MouseButton1Click:Connect(function()
+    local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if root then root.CFrame = CFrame.new(690, 5, 232) end
 end)
 
-local LagiNendang = false -- Kunci biar gak spam nendang
+-- 2. GABUNGAN GOD MODE + AUTO PERFECT
+local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
+local kickEvent = network:WaitForChild("rev_KickEvent")
+local TweenService = game:GetService("TweenService")
+local kickCollect = network:WaitGorChild("rev_KickEvent")
 
-btnFarm.MouseButton1Down:Connect(function()
-    ToggleFarm = not ToggleFarm
-    btnFarm.Text = ToggleFarm and "AUTO FARM: ON" or "AUTO FARM: OFF"
-    btnFarm.BackgroundColor3 = ToggleFarm and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(200, 0, 0)
+ButtonFarm.MouseButton1Click:Connect(function()
+    Toggle = not Toggle
+    ButtonFarm.Text = Toggle and "FARM: ON" or "FARM: OFF"
+    ButtonFarm.BackgroundColor3 = Toggle and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
     
-    if ToggleFarm then
+    if Toggle then
         task.spawn(function()
-            while ToggleFarm do
-                local char = LP.Character
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                local hum = char and char:FindFirstChild("Humanoid")
-
-                if root and hum and not LagiNendang then
-                    -- 1. PROSES NENDANG
-                    LagiNendang = true 
-                    kickEvent:FireServer(1) 
-                    
-                    -- 2. TUNGGU MOMEN TERBANG & JADI BRAINROT
-                    task.wait(3.5) -- Waktu terbang + jadi item (sesuaikan kalau masih telat)
-                    
-                    -- Gerak dikit buat mastiin ke-pickup
-                    hum:MoveTo(root.Position + Vector3.new(10, 0, 0)) 
-                    task.wait(0.5)
-
-                    -- 3. BALIK KE PLOT & RECOVERY
-                    root.CFrame = CFrame.new(690, 5, 232)
-                    task.wait(1.5) -- Jeda di plot biar animasi/koin masuk dulu
-                    
-                    LagiNendang = false -- Buka kunci, boleh nendang lagi
+            while Toggle do
+                local char = game.Players.LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    -- GOD MODE (Isi darah terus biar selamat dari Tsunami)
+                    hum.Health = hum.MaxHealth
+                    if hum:GetStateEnabled(Enum.HumanoidStateType.Dead) then
+                        hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+                    end
                 end
-                task.wait(0.5)
-            end
-        end)
-    end
-end)
-
--- Auto Train (Latihan Beban)
-btnTrain.MouseButton1Down:Connect(function()
-    ToggleTrain = not ToggleTrain
-    btnTrain.Text = ToggleTrain and "TRAIN: ON" or "TRAIN: OFF"
-    btnTrain.BackgroundColor3 = ToggleTrain and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(120, 0, 180)
-    
-    if ToggleTrain then
-        task.spawn(function()
-            while ToggleTrain do
-                if trainEvent then trainEvent:FireServer() end
                 task.wait(0.1)
             end
         end)
     end
+end)
+
+-- HOOKING UNTUK PERFECT (Hanya aktif saat FARM ON)
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+
+    if Toggle and self == kickEvent and method == "FireServer" then
+        args[1] = 1 -- Paksa data tendangan jadi 1 (Perfect)
+        return oldNamecall(self, unpack(args))
+    end
+    return oldNamecall(self, ...)
 end)
