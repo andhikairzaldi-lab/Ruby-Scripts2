@@ -36,7 +36,6 @@ end)
 -- 2. SMART AUTO FARM (ANTRIAN RAPI)
 local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local kickEvent = network:WaitForChild("rev_KickEvent")
-local kickCollect = network:WaitForChild("rev_KickCollect")
 
 ButtonFarm.MouseButton1Click:Connect(function()
     Toggle = not Toggle
@@ -51,7 +50,36 @@ ButtonFarm.MouseButton1Click:Connect(function()
                 
                 if hum and hum.Health > 0 then
                     -- GOD MODE (Agar tidak mati saat tsunami)
+                ButtonGod.MouseButton1Click:Connect(function()
+    ToggleGod = not ToggleGod
+    ButtonGod.Text = ToggleGod and "KEBAL: ON" or "KEBAL: OFF"
+    ButtonGod.BackgroundColor3 = ToggleGod and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+    
+    local player = game.Players.LocalPlayer
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+    if hum then
+        if ToggleGod then
+            -- Mematikan semua perubahan status (termasuk pengurangan darah)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+            
+            -- Mencoba mengunci darah di angka maksimal
+            task.spawn(function()
+                while ToggleGod do
                     hum.Health = hum.MaxHealth
+                    task.wait()
+                end
+            end)
+        else
+            -- Mengembalikan fungsi normal
+            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+            char:BreakJoints() -- Reset karakter agar normal kembali
+        end
+    end
+end)
                     
                     -- SEKALI KLIK: Kirim Power Perfect
                     kickEvent:FireServer(1) 
