@@ -36,7 +36,7 @@ ButtonTP.MouseButton1Click:Connect(function()
     if root then root.CFrame = CFrame.new(690, 5, 232) end
 end)
 
--- 2. GABUNGAN GOD MODE + AUTO KICK + AUTO WALK
+-- 2. GABUNGAN GOD MODE + AUTO KICK + SPEED WALK
 ButtonFarm.MouseButton1Click:Connect(function()
     Toggle = not Toggle
     ButtonFarm.Text = Toggle and "FARM: ON" or "FARM: OFF"
@@ -50,26 +50,31 @@ ButtonFarm.MouseButton1Click:Connect(function()
                 local root = char and char:FindFirstChild("HumanoidRootPart")
 
                 if hum and root then
+                    -- SET KECEPATAN (Ubah angka 100 kalau mau lebih pelan/cepat)
+                    hum.WalkSpeed = 100 
+                    
                     -- GOD MODE
                     hum.Health = hum.MaxHealth
                     if hum:GetStateEnabled(Enum.HumanoidStateType.Dead) then
                         hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
                     end
 
-                    -- PERINTAH JALAN (MAJU SEDIKIT)
-                    -- Menghitung posisi 5 langkah di depan karakter sekarang
-                    local targetPos = root.Position + (root.CFrame.LookVector * 5)
+                    -- PERINTAH JALAN (MAJU 10 LANGKAH)
+                    local targetPos = root.Position + (root.CFrame.LookVector * 10)
                     hum:MoveTo(targetPos)
 
                     -- PERINTAH NENDANG
-                    -- Karena kita pake Hooking di bawah, kirim angka 1 biar Perfect
                     kickEvent:FireServer(1)
                 end
                 
-                -- JEDA AMAN (Biar nggak ke-kick karena spam)
                 task.wait(2.5) 
             end
         end)
+    else
+        -- Kembalikan speed normal saat OFF
+        local char = game.Players.LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 16 end
     end
 end)
 
