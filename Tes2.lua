@@ -36,6 +36,17 @@ end)
 -- 2. GABUNGAN GOD MODE + AUTO PERFECT
 local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local kickEvent = network:WaitForChild("rev_KickEvent")
+local char = game.Players.LocalPlayer.Character
+local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+-- Tentukan titik tujuan (misalnya koordinat base kamu)
+local lokasiTujuan = Vector3.new(650, 5, 232) 
+
+-- Perintah untuk berjalan maju ke lokasi tersebut
+humanoid:MoveTo(lokasiTujuan)
+
+-- Opsi tambahan: Tunggu sampai karakter benar-benar sampai sebelum lanjut
+humanoid.MoveToFinished:Wait()
 
 ButtonFarm.MouseButton1Click:Connect(function()
     Toggle = not Toggle
