@@ -4,10 +4,10 @@ local ButtonTP = Instance.new("TextButton")
 local ButtonFarm = Instance.new("TextButton")
 local Toggle = false
 
--- UI Setup (Lebih Kecil & Rapi)
+-- UI Setup
 ScreenGui.Parent = game.CoreGui
 Frame.Parent = ScreenGui
-Frame.Size = UDim2.new(0, 150, 0, 90) -- Ukuran diperkecil
+Frame.Size = UDim2.new(0, 150, 0, 90)
 Frame.Position = UDim2.new(0.5, -75, 0.4, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Frame.Active = true
@@ -27,16 +27,16 @@ end
 styleBtn(ButtonTP, "TELEPORT", UDim2.new(0.05, 0, 0.07, 0), Color3.fromRGB(0, 100, 200))
 styleBtn(ButtonFarm, "FARM: OFF", UDim2.new(0.05, 0, 0.53, 0), Color3.fromRGB(150, 0, 0))
 
+local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
+local kickEvent = network:WaitForChild("rev_KickEvent")
+
 -- 1. TELEPORT MANUAL
 ButtonTP.MouseButton1Click:Connect(function()
     local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if root then root.CFrame = CFrame.new(690, 5, 232) end
 end)
 
--- 2. GABUNGAN GOD MODE + AUTO PERFECT
-local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
-local kickEvent = network:WaitForChild("rev_KickEvent")
-
+-- 2. GABUNGAN GOD MODE + AUTO KICK + AUTO WALK
 ButtonFarm.MouseButton1Click:Connect(function()
     Toggle = not Toggle
     ButtonFarm.Text = Toggle and "FARM: ON" or "FARM: OFF"
@@ -47,27 +47,39 @@ ButtonFarm.MouseButton1Click:Connect(function()
             while Toggle do
                 local char = game.Players.LocalPlayer.Character
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    -- GOD MODE (Isi darah terus biar selamat dari Tsunami)
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+
+                if hum and root then
+                    -- GOD MODE
                     hum.Health = hum.MaxHealth
                     if hum:GetStateEnabled(Enum.HumanoidStateType.Dead) then
                         hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
                     end
+
+                    -- PERINTAH JALAN (MAJU SEDIKIT)
+                    -- Menghitung posisi 5 langkah di depan karakter sekarang
+                    local targetPos = root.Position + (root.CFrame.LookVector * 5)
+                    hum:MoveTo(targetPos)
+
+                    -- PERINTAH NENDANG
+                    -- Karena kita pake Hooking di bawah, kirim angka 1 biar Perfect
+                    kickEvent:FireServer(1)
                 end
-                task.wait(0.1)
+                
+                -- JEDA AMAN (Biar nggak ke-kick karena spam)
+                task.wait(2.5) 
             end
         end)
     end
 end)
 
--- HOOKING UNTUK PERFECT (Hanya aktif saat FARM ON)
+-- HOOKING UNTUK PERFECT
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
-
     if Toggle and self == kickEvent and method == "FireServer" then
-        args[1] = 1 -- Paksa data tendangan jadi 1 (Perfect)
+        args[1] = 1 
         return oldNamecall(self, unpack(args))
     end
     return oldNamecall(self, ...)
