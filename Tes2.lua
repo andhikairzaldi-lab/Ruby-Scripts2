@@ -67,8 +67,8 @@ ButtonFarm.MouseButton1Click:Connect(function()
                 task.wait(0.1) -- Jeda loop biar gak lag
             end
         end)
-        end
-        
+    end
+
 -- HOOKING UNTUK PERFECT (Hanya aktif saat FARM ON)
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
