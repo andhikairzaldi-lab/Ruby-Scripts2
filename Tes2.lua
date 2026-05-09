@@ -4,7 +4,7 @@ local Frame = Instance.new("Frame")
 local ButtonTP = Instance.new("TextButton")
 local ButtonFarm = Instance.new("TextButton")
 
--- UI Setup Ramping
+-- UI Setup (Kecil & Rapi)
 ScreenGui.Parent = game.CoreGui
 Frame.Parent = ScreenGui
 Frame.Size = UDim2.new(0, 150, 0, 90)
@@ -33,7 +33,7 @@ ButtonTP.MouseButton1Click:Connect(function()
     if root then root.CFrame = CFrame.new(690, 5, 232) end
 end)
 
--- 2. AUTO FARM (KICK + GOD MODE)
+-- 2. SMART AUTO FARM (ANTRIAN RAPI)
 local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local kickEvent = network:WaitForChild("rev_KickEvent")
 local kickCollect = network:WaitForChild("rev_KickCollect")
@@ -50,27 +50,28 @@ ButtonFarm.MouseButton1Click:Connect(function()
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 
                 if hum and hum.Health > 0 then
-                    -- GOD MODE
+                    -- GOD MODE (Agar tidak mati saat tsunami)
                     hum.Health = hum.MaxHealth
                     
-                    -- AUTO KICK (Langsung tembak Remote)
-                    -- Kita kirim angka 1 supaya dapet Perfect (Hooking tetap aktif buat jaga-jaga)
-                    kickEvent:FireServer(1)
+                    -- SEKALI KLIK: Kirim Power Perfect
+                    kickEvent:FireServer(1) 
                     
-                    -- Tunggu sebentar biar animasi masuk, baru ambil hadiah
-                    task.wait(0.3)
+                    -- TUNGGU ANIMASI: Kita beri jeda yang pas (2-3 detik)
+                    -- Ini supaya server melihat kamu nendang layaknya manusia
+                    task.wait(2.5) 
+                    
+                    -- AMBIL HADIAH
                     kickCollect:FireServer()
+                    
+                    -- JEDA ANTAR BALOK
+                    task.wait(1)
                 end
-                
-                -- JEDA: Sangat penting biar nggak kena kick Error 267
-                -- Kamu bisa ganti 0.8 ke 0.5 kalau mau lebih kencang (tapi risiko kick naik)
-                task.wait(0.8) 
             end
         end)
     end
 end)
 
--- HOOKING UNTUK PERFECT (Agar tetap aman meski nendang manual)
+-- HOOKING (Tetap ada buat jaga-jaga kalau kamu iseng klik manual)
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local args = {...}
