@@ -36,7 +36,6 @@ end)
 -- 2. SMART AUTO FARM (ANTRIAN RAPI)
 local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local kickEvent = network:WaitForChild("rev_KickEvent")
-local kickCollect = network:WaitForChild("rev_KickCollect")
 
 ButtonFarm.MouseButton1Click:Connect(function()
     Toggle = not Toggle
