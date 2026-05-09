@@ -4,12 +4,13 @@ local ButtonTP = Instance.new("TextButton")
 local ButtonFarm = Instance.new("TextButton")
 local Toggle = false
 
--- UI Setup (Lebih Kecil & Rapi)
-ScreenGui.Parent = game.CoreGui
+-- UI Setup (Pastikan parent ke CoreGui biar stabil)
+ScreenGui.Parent = game:GetService("CoreGui")
 Frame.Parent = ScreenGui
-Frame.Size = UDim2.new(0, 150, 0, 90) -- Ukuran diperkecil
-Frame.Position = UDim2.new(0.5, -75, 0.4, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Frame.Size = UDim2.new(0, 160, 0, 100)
+Frame.Position = UDim2.new(0.5, -80, 0.4, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.BorderSizePixel = 2
 Frame.Active = true
 Frame.Draggable = true
 
@@ -20,12 +21,17 @@ local function styleBtn(btn, text, pos, color)
     btn.Text = text
     btn.BackgroundColor3 = color
     btn.TextColor3 = Color3.new(1,1,1)
-    btn.TextSize = 12
-    btn.BorderSizePixel = 0
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 14
 end
 
-styleBtn(ButtonTP, "TELEPORT", UDim2.new(0.05, 0, 0.07, 0), Color3.fromRGB(0, 100, 200))
-styleBtn(ButtonFarm, "FARM: OFF", UDim2.new(0.05, 0, 0.53, 0), Color3.fromRGB(150, 0, 0))
+styleBtn(ButtonTP, "TELEPORT PLOT", UDim2.new(0.05, 0, 0.05, 0), Color3.fromRGB(0, 120, 255))
+styleBtn(ButtonFarm, "AUTO FARM: OFF", UDim2.new(0.05, 0, 0.55, 0), Color3.fromRGB(200, 0, 0))
+
+-- Ambil Remote Events
+local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
+local kickEvent = network:WaitForChild("rev_KickEvent")
+local trainEvent = network:WaitForChild("rev_TrainEvent") -- Event buat latihan beban
 
 -- 1. TELEPORT MANUAL
 ButtonTP.MouseButton1Click:Connect(function()
@@ -33,16 +39,13 @@ ButtonTP.MouseButton1Click:Connect(function()
     if root then root.CFrame = CFrame.new(690, 5, 232) end
 end)
 
--- 2. GABUNGAN GOD MODE + AUTO PERFECT
-local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
-local kickEvent = network:WaitForChild("rev_KickEvent")
-
+-- 2. AUTO FARM (Kick + Run + God Mode)
 ButtonFarm.MouseButton1Click:Connect(function()
     Toggle = not Toggle
-    ButtonFarm.Text = Toggle and "FARM: ON" or "FARM: OFF"
-    ButtonFarm.BackgroundColor3 = Toggle and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
+    ButtonFarm.Text = Toggle and "AUTO FARM: ON" or "AUTO FARM: OFF"
+    ButtonFarm.BackgroundColor3 = Toggle and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
     
-        if Toggle then
+    if Toggle then
         task.spawn(function()
             while Toggle do
                 local char = game.Players.LocalPlayer.Character
@@ -50,33 +53,32 @@ ButtonFarm.MouseButton1Click:Connect(function()
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 
                 if root and hum then
-                    -- 1. GOD MODE (Biar gak mati kena tsunami)
+                    -- GOD MODE
                     hum.Health = hum.MaxHealth
                     
-                    -- 2. AUTO KICK (Spam klik/nendang)
-                    -- Ganti "rev_KickEvent" kalau nama remotenya beda di game
-                    kickEvent:FireServer(1) 
-
-                    -- 3. AUTO RUN / TELEPORT BALIK (Setelah dapet Brainrot)
-                    -- Kita cek jika karakter ada di area berbahaya (X > 500 misalnya)
-                    if root.Position.X > 500 then 
-                        task.wait(0.5) -- Kasih delay dikit biar Brainrot-nya ke-pickup
-                        root.CFrame = CFrame.new(690, 5, 232) -- Koordinat Plot/Safe Zone kamu
+                    -- AUTO KICK & TRAIN
+                    kickEvent:FireServer(1) -- Kick (Perfect)
+                    trainEvent:FireServer() -- Auto angkat beban
+                    
+                    -- AUTO RUN (Balik ke plot kalau kejauhan)
+                    if root.Position.X > 500 then
+                        task.wait(0.7) -- Delay biar item ke-loot
+                        root.CFrame = CFrame.new(690, 5, 232)
                     end
                 end
-                task.wait(0.1) -- Jeda loop biar gak lag
+                task.wait(0.1)
             end
         end)
     end
+end)
 
--- HOOKING UNTUK PERFECT (Hanya aktif saat FARM ON)
+-- HOOKING UNTUK FORCE PERFECT
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
-
     if Toggle and self == kickEvent and method == "FireServer" then
-        args[1] = 1 -- Paksa data tendangan jadi 1 (Perfect)
+        args[1] = 1 -- Force 1 (Perfect)
         return oldNamecall(self, unpack(args))
     end
     return oldNamecall(self, ...)
