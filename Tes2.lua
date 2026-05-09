@@ -61,7 +61,7 @@ btnTP.MouseButton1Down:Connect(function()
     if root then root.CFrame = CFrame.new(690, 5, 232) end
 end)
 
--- Auto Farm (Auto Kick + Auto Return)
+-- Ganti bagian btnFarm.MouseButton1Down kamu dengan ini:
 btnFarm.MouseButton1Down:Connect(function()
     ToggleFarm = not ToggleFarm
     btnFarm.Text = ToggleFarm and "AUTO FARM: ON" or "AUTO FARM: OFF"
@@ -72,16 +72,28 @@ btnFarm.MouseButton1Down:Connect(function()
             while ToggleFarm do
                 local char = LP.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
-                if root and kickEvent then
-                    kickEvent:FireServer(1) -- Kirim sinyal tendang (1 = Perfect)
+                local hum = char and char:FindFirstChild("Humanoid")
+
+                if root and hum and kickEvent then
+                    -- 1. TENDANG
+                    kickEvent:FireServer(1) 
                     
-                    -- Logika Auto Jalan/Balik: Jika karakter menjauh dari plot
-                    if root.Position.X > 500 then
-                        task.wait(0.8) -- Kasih waktu buat ambil item
+                    -- 2. CEK APAKAH LAGI TERBANG (NENDANG)
+                    -- Biasanya kalau abis nendang, posisi X bakal nambah drastis
+                    if root.Position.X > 400 then 
+                        -- TUNGGU SAMPAI JADI BRAINROT & JATUH
+                        task.wait(2.5) -- Ditambahin biar gak kecepetan TP balik
+                        
+                        -- JALAN MAJU DIKIT (Biar pasti kena itemnya)
+                        hum:MoveTo(root.Position + Vector3.new(5, 0, 0))
+                        task.wait(0.5)
+
+                        -- 3. BARU TELEPORT BALIK KE PLOT
                         root.CFrame = CFrame.new(690, 5, 232)
+                        task.wait(1) -- Jeda bentar di plot sebelum nendang lagi
                     end
                 end
-                task.wait(0.1)
+                task.wait(0.2)
             end
         end)
     end
