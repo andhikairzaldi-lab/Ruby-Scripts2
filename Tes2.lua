@@ -88,7 +88,7 @@ ButtonFarm.MouseButton1Click:Connect(function()
                     hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
                     kickEvent:FireServer(1)
                 end
-                task.wait() -- Jeda tendangan tidak mengganggu jalan
+                task.wait(1.5) -- Jeda tendangan tidak mengganggu jalan
             end
         end)
     else
