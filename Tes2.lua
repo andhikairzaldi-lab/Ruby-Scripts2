@@ -36,8 +36,6 @@ end)
 -- 2. GABUNGAN GOD MODE + AUTO PERFECT
 local network = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local kickEvent = network:WaitForChild("rev_KickEvent")
-local TweenService = game:GetService("TweenService")
-local kickCollect = network:WaitGorChild("rev_KickEvent")
 
 ButtonFarm.MouseButton1Click:Connect(function()
     Toggle = not Toggle
