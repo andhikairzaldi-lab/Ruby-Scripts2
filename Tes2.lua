@@ -3,6 +3,8 @@ local Frame = Instance.new("Frame")
 local ButtonTP = Instance.new("TextButton")
 local ButtonFarm = Instance.new("TextButton")
 local Toggle = false
+local ButtonAutoKick = Instance.new("TextButton")
+local AutoKickToggle = false
 
 -- UI Setup (Lebih Kecil & Rapi)
 ScreenGui.Parent = game.CoreGui
@@ -12,6 +14,8 @@ Frame.Position = UDim2.new(0.5, -75, 0.4, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Frame.Active = true
 Frame.Draggable = true
+Frame.Size = UDim2.new(0, 150, 0, 135) -- Frame diperbesar buat tombol baru
+styleBtn(ButtonAutoKick, "AUTO KICK: OFF", UDim2.new(0.05, 0, 0.70, 0), Color3.fromRGB(100, 0, 150))
 
 local function styleBtn(btn, text, pos, color)
     btn.Parent = Frame
@@ -26,6 +30,32 @@ end
 
 styleBtn(ButtonTP, "TELEPORT", UDim2.new(0.05, 0, 0.07, 0), Color3.fromRGB(0, 100, 200))
 styleBtn(ButtonFarm, "FARM: OFF", UDim2.new(0.05, 0, 0.53, 0), Color3.fromRGB(150, 0, 0))
+ButtonAutoKick.MouseButton1Click:Connect(function()
+    AutoKickToggle = not AutoKickToggle
+    ButtonAutoKick.Text = AutoKickToggle and "AUTO KICK: ON" or "AUTO KICK: OFF"
+    ButtonAutoKick.BackgroundColor3 = AutoKickToggle and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 0, 150)
+
+    if AutoKickToggle then
+        task.spawn(function()
+            while AutoKickToggle do
+                local char = game.Players.LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                
+                -- Cek apakah karakter masih hidup & tegap (biar gak ngebug pas respawn)
+                if char and hum and hum.Health > 0 then
+                    -- Trigger Kick Event
+                    kickEvent:FireServer(1) -- Angka 1 karena sudah di-hook jadi Perfect
+                    
+                    -- JEDA SANGAT PENTING: Kasih waktu block berubah/meledak
+                    -- Coba di angka 0.5 - 1.2 detik tergantung lag game-nya
+                    task.wait(0.8) 
+                else
+                    task.wait(1) -- Tunggu respawn selesai
+                end
+            end
+        end)
+    end
+end)
 
 -- 1. TELEPORT MANUAL
 ButtonTP.MouseButton1Click:Connect(function()
