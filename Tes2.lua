@@ -1,48 +1,68 @@
 -- =======================================================
--- KICK A LUCKY BLOCK - AUTO CLICK POP-UP x2 BUTTON
+-- KICK A LUCKY BLOCK - AUTO CLICK POP-UP x2 MULTIPLIER (V2)
 -- =======================================================
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Konfigurasi toggle script
 _G.AutoClickX2 = true
 
--- Fungsi utama scan dan klik tombol x2 secara cepat
+-- Fungsi untuk mengeklik tombol secara paksa bypass restriksi UI
+local function forceClick(button)
+    -- Metode 1: Aktivasi virtual internal Roblox
+    button:Activate()
+    
+    -- Metode 2: Tembakkan event klik mouse simulator bawaan executor (jika didukung)
+    if firesignal then
+        firesignal(button.MouseButton1Click)
+        firesignal(button.MouseButton1Down)
+        firesignal(button.Activated)
+    end
+    
+    -- Metode 3: Panggil koneksi mentah via getconnections (cadangan)
+    if getconnections then
+        for _, connection in ipairs(getconnections(button.MouseButton1Click)) do
+            connection:Fire()
+        end
+        for _, connection in ipairs(getconnections(button.Activated)) do
+            connection:Fire()
+        end
+    end
+end
+
+-- Looping pemindaian UI secara agresif
 task.spawn(function()
-    print("[Auto-Click x2 Started] Mencari tombol pengganda kekuatan...")
+    print("[Auto-Click x2 v2 Started] Mendeteksi pop-up perkalian daya...")
     
     while _G.AutoClickX2 do
-        -- Scan seluruh isi PlayerGui untuk mencari tombol/teks bertuliskan "x2"
-        for _, guiObject in ipairs(PlayerGui:GetDescendants()) do
-            if guiObject:IsA("TextButton") or guiObject:IsA("ImageButton") then
+        -- Cari di seluruh elemen GUI milik pemain
+        for _, obj in ipairs(PlayerGui:GetDescendants()) do
+            -- Pastikan objek tersebut adalah tombol klik
+            if obj:IsA("TextButton") or obj:IsA("ImageButton") then
                 
-                -- Deteksi tombol berdasarkan properti Nama atau Teks di dalamnya
-                local textMatch = false
-                if guiObject:IsA("TextButton") and (string.find(string.lower(guiObject.Text), "x2") or string.find(string.lower(guiObject.Name), "x2")) then
-                    textMatch = true
-                elseif string.find(string.lower(guiObject.Name), "x2") or string.find(string.lower(guiObject.Name), "double") then
-                    textMatch = true
+                -- Deteksi tombol berdasarkan string teks atau nama objek (case-insensitive)
+                local isX2Button = false
+                
+                if obj:IsA("TextButton") then
+                    local txt = string.lower(obj.Text)
+                    if string.find(txt, "x2") or string.find(txt, "2x") or string.find(txt, "multiplier") then
+                        isX2Button = true
+                    end
                 end
                 
-                -- Jika tombol ditemukan dan posisinya terlihat (visible) di layar
-                if textMatch and guiObject.Visible and guiObject.AbsoluteSize.X > 0 then
-                    -- Metode 1: Simulasikan klik langsung lewat fungsi bawaan Roblox Gui
-                    guiObject:Activate()
-                    
-                    -- Metode 2 (Cadangan): Tembakkan event klik jika metode pertama dilewati
-                    local events = {"MouseButton1Click", "MouseButton1Down", "Activated"}
-                    for _, eventName in ipairs(events) do
-                        if guiObject[eventName] then
-                            for _, connection in ipairs(getconnections(guiObject[eventName])) do
-                                connection:Fire()
-                            end
-                        end
-                    end
+                local name = string.lower(obj.Name)
+                if string.find(name, "x2") or string.find(name, "multiplier") or string.find(name, "double") or string.find(name, "pop") then
+                    isX2Button = true
+                end
+                
+                -- Jika terindikasi tombol x2, eksekusi klik secara instan
+                if isX2Button then
+                    -- Catatan: Beberapa game menyembunyikan tombol lewat Parent-nya, jadi kita langsung klik saja tanpa cek .Visible
+                    forceClick(obj)
                 end
             end
         end
-        task.wait(0.01) -- Deteksi super cepat setiap 0.01 detik agar tombol tidak terlewat
+        task.wait(0.005) -- Delay super tipis (5 milidetik) agar tidak ada tombol pop-up yang lolos
     end
 end)
